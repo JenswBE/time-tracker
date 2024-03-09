@@ -1,0 +1,39 @@
+services:
+  db:
+    image: docker.io/library/postgres:16-alpine
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: tt
+      POSTGRES_PASSWORD: tt
+
+  # Realm can be re-exported with:
+  # podman compose exec keycloak /opt/keycloak/bin/kc.sh export --dir /tmp --users realm_file --realm tt
+  # podman cp gocom-keycloak:/tmp/tt.json local/keycloak-import/realm-tt.json
+  keycloak:
+    container_name: tt-keycloak
+    image: quay.io/keycloak/keycloak:24.0
+    command:
+      - "start-dev"
+      - "--import-realm"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_DB_SCHEMA: public
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - 9001:8080
+    depends_on:
+      - keycloak-db
+    volumes:
+      - "./local/keycloak-import:/opt/keycloak/data/import:ro,z"
+
+  keycloak-db:
+    container_name: tt-keycloak-db
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
